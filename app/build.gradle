@@ -17,7 +17,30 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        debug {
+            // Fixed debug keystore checked into the repo (as debug.keystore.b64,
+            // decoded by CI before building — see .github/workflows/build.yml).
+            // Without this, Gradle falls back to each machine's own
+            // auto-generated ~/.android/debug.keystore, which is different on
+            // every fresh CI runner and every local machine. That means every
+            // build gets a different signing certificate, and Android refuses
+            // to install a new APK over an existing one signed with a
+            // different certificate ("app not installed as package conflicts
+            // with an existing package"). Pinning one fixed keystore here
+            // makes every build — CI or local — share the same identity, so
+            // updates actually install as updates instead of conflicting.
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -31,8 +54,8 @@ android {
 }
 
 dependencies {
-    // Official Glyph Matrix SDK. In local builds this comes from libs/ (see
-    // README); in CI, the workflow downloads it into libs/ before this
-    // resolves, since it isn't committed to the repo as a binary blob.
+    // Official Glyph Matrix SDK, downloaded directly from
+    // Nothing-Developer-Programme/GlyphMatrix-Developer-Kit on GitHub.
+    // This is the app's only dependency — no AndroidX, no UI libraries.
     implementation files('libs/glyph-matrix-sdk-2.0.aar')
 }

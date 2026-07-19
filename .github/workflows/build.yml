@@ -36,6 +36,9 @@ jobs:
             https://raw.githubusercontent.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit/main/glyph-matrix-sdk-2.0.aar
           ls -la app/libs
 
+      - name: Decode pinned debug keystore
+        run: base64 -d debug.keystore.b64 > app/debug.keystore
+
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
 
