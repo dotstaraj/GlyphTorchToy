@@ -2,6 +2,24 @@ plugins {
     id 'com.android.application'
 }
 
+// The debug keystore is committed at the repo root as debug.keystore.b64 so
+// every build shares one signing certificate: CI decodes it in a workflow
+// step, and this task decodes it too so local Android Studio builds match
+// it automatically as well, with no manual step. Without this, Android
+// Gradle Plugin falls back to each machine's own auto-generated
+// ~/.android/debug.keystore, which differs per machine and per fresh CI
+// runner. Different certs mean Android refuses to install a new APK over
+// an existing one ("app not installed as package conflicts with an
+// existing package") even though the package name is identical.
+tasks.register('decodeDebugKeystore') {
+    def b64File = rootProject.file('debug.keystore.b64')
+    def outFile = file('debug.keystore')
+    onlyIf { b64File.exists() }
+    doLast {
+        outFile.bytes = Base64.decoder.decode(b64File.text.trim())
+    }
+}
+
 android {
     namespace 'com.dotstaraj.glyphtorchtoy'
     compileSdk 35
@@ -19,17 +37,8 @@ android {
 
     signingConfigs {
         debug {
-            // Fixed debug keystore checked into the repo (as debug.keystore.b64,
-            // decoded by CI before building — see .github/workflows/build.yml).
-            // Without this, Gradle falls back to each machine's own
-            // auto-generated ~/.android/debug.keystore, which is different on
-            // every fresh CI runner and every local machine. That means every
-            // build gets a different signing certificate, and Android refuses
-            // to install a new APK over an existing one signed with a
-            // different certificate ("app not installed as package conflicts
-            // with an existing package"). Pinning one fixed keystore here
-            // makes every build — CI or local — share the same identity, so
-            // updates actually install as updates instead of conflicting.
+            // Fixed debug keystore — see decodeDebugKeystore task above for
+            // why, and how it gets here on both CI and local builds.
             storeFile file("debug.keystore")
             storePassword "android"
             keyAlias "androiddebugkey"
@@ -51,6 +60,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+tasks.named('preBuild').configure {
+    dependsOn('decodeDebugKeystore')
 }
 
 dependencies {
