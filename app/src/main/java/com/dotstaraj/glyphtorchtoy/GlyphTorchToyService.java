@@ -35,7 +35,7 @@ public class GlyphTorchToyService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         init();
-        return serviceMessenger.getBinder();
+        return null;// serviceMessenger.getBinder();
     }
 
     @Override
@@ -59,7 +59,7 @@ public class GlyphTorchToyService extends Service {
             @Override
             public void onServiceConnected(ComponentName componentName) {
                 mGM.register(Glyph.DEVICE_23112);
-                drawIdle();
+                drawFullBrightness();
             }
 
             @Override
