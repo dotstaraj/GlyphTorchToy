@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required by the Glyph Matrix SDK to talk to the system Glyph service -->
+    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/glyph_torch_icon"
+        android:label="@string/app_name">
+
+        <!-- The actual Glyph Toy. Registered so Nothing OS's Glyph Toys manager
+             finds it, lets you add it to your active toy rotation, and delivers
+             Glyph Button events to it. -->
+        <service
+            android:name=".GlyphTorchToyService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nothing.glyph.TOY"/>
+            </intent-filter>
+
+            <!-- Required: name shown in the Glyph Toys manager list -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.name"
+                android:resource="@string/toy_name"/>
+
+            <!-- Required: preview image shown in the Glyph Toys manager list -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.image"
+                android:resource="@drawable/glyph_toy_preview"/>
+
+            <!-- Optional: short description shown under the toy name -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.summary"
+                android:resource="@string/toy_summary"/>
+
+            <!-- Enables the long-press "change" event. Without this, a long
+                 press on the Glyph Button does nothing for this toy. -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.longpress"
+                android:value="1"/>
+        </service>
+
+    </application>
+
+</manifest>

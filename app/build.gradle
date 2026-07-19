@@ -1,0 +1,38 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dotstaraj.glyphtorchtoy'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.dotstaraj.glyphtorchtoy"
+        // The Glyph Matrix SDK aar itself declares minSdkVersion 33 (Android 13) in its
+        // own manifest — confirmed by extracting AndroidManifest.xml from the aar directly.
+        // Setting this any lower will fail at manifest-merge time.
+        minSdk 33
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Official Glyph Matrix SDK. In local builds this comes from libs/ (see
+    // README); in CI, the workflow downloads it into libs/ before this
+    // resolves, since it isn't committed to the repo as a binary blob.
+    implementation files('libs/glyph-matrix-sdk-2.0.aar')
+}

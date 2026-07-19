@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- center disc -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,38 m-16,0 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0"/>
+
+    <!-- radiating rays -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M54,10 L54,18 M54,58 L54,74 M26,38 L18,38 M90,38 L82,38 M33.6,17.6 L28,12 M80,64 L74.4,58.4 M33.6,58.4 L28,64 M80,12 L74.4,17.6"/>
+
+    <!-- base / handle -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M46,74 L62,74 L62,88 Q62,94 54,94 Q46,94 46,88 Z"/>
+</vector>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Glyph Torch Toy</string>
+    <string name="toy_name">Glyph Torch</string>
+    <string name="toy_summary">Long-press to light up the whole Matrix as a torch</string>
+</resources>
