@@ -6,7 +6,7 @@
     <!-- For the extra-long-press haptic pattern -->
     <uses-permission android:name="android.permission.VIBRATE"/>
     <!-- Exempts this app from Android's background-activity-start restriction,
-         so configured actions fire even when the config screen isn't open --
+         so configured actions fire even when the config screen isn't open -
          see README. Granted via a Settings toggle (MainActivity prompts for
          it), not a runtime permission dialog. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
