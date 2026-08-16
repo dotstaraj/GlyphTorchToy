@@ -5,6 +5,27 @@
     <uses-permission android:name="com.nothing.ketchum.permission.ENABLE"/>
     <!-- For the extra-long-press haptic pattern -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Exempts this app from Android's background-activity-start restriction,
+         so configured actions fire even when the config screen isn't open --
+         see README. Granted via a Settings toggle (MainActivity prompts for
+         it), not a runtime permission dialog. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
+    <!-- Android 11+ package-visibility filtering hides other installed apps
+         from PackageManager queries by default. Without this, the app/
+         shortcut picker only sees a handful of apps the OS happens to leave
+         visible. This declares the two intents the picker actually queries
+         for, which is the documented, Play-Store-friendly way to see all of
+         them without needing the QUERY_ALL_PACKAGES permission. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.CREATE_SHORTCUT"/>
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -12,11 +33,13 @@
         android:label="@string/app_name">
 
         <!-- Minimal config screen: pick which app/shortcut each of the four
-             toy signals launches, and set the extra-long-press timer. -->
+             toy signals launches, and set the extra-long-press timer.
+             NoActionBar: no title bar, per request. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -25,7 +48,7 @@
 
         <!-- The actual Glyph Toy. Registered so Nothing OS's Glyph Toys manager
              finds it and lets you add it to your active toy rotation.
-             longpress metadata is back: the toy now listens for EVENT_CHANGE
+             longpress metadata is back: the toy listens for EVENT_CHANGE
              (regular long press) and EVENT_ACTION_DOWN/UP (used to time the
              extra-long-press heuristic), in addition to the unchanged
              activation/deactivation torch behavior. -->
@@ -53,7 +76,7 @@
 
             <!-- Enables EVENT_CHANGE (long press) and, per the GDK docs,
                  the same flag also governs the ACTION_DOWN/UP touch events
-                 this toy now also relies on for extra-long-press timing. -->
+                 this toy also relies on for extra-long-press timing. -->
             <meta-data
                 android:name="com.nothing.glyph.toy.longpress"
                 android:value="1"/>

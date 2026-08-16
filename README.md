@@ -13,11 +13,11 @@ configurable to launch an app or app shortcut of your choice:
   1000ms) from the moment you press down, without releasing or
   triggering a regular long press first
 
-Configure all four from the app itself (it has a launcher icon again,
-specifically for this): tap a row, tap an app to launch the app itself,
-or tap the "+" next to an app to expand its shortcuts and pick one of
-those instead. No confirm/cancel — tapping commits immediately. The
-extra-long-press timer is a plain numeric field on the same screen.
+Configure all four from the app itself: tap a row, tap an app to launch
+the app itself, or (if that app offers one) tap "+" to expand its
+shortcut-creator entries and pick one. No confirm/cancel — tapping
+commits immediately. The extra-long-press timer is a plain numeric field
+on the same screen.
 
 ## Extra-long-press mechanics
 
@@ -33,32 +33,61 @@ eventual `ACTION_UP` is a no-op. The two are mutually exclusive by
 design — reaching extra-long-press suppresses the regular long-press
 action rather than firing both.
 
-## Two known limitations — not yet verified on real hardware
+## Shortcuts: ACTION_CREATE_SHORTCUT only, not static/dynamic shortcuts
 
-**Shortcuts are static-only.** Fully general access to another app's
-shortcuts (`LauncherApps.getShortcuts()`) requires the calling app to be
-the phone's default launcher, which this app deliberately isn't. Instead
-it reads each app's declared `shortcuts.xml` resource directly via
-`PackageManager` — no special permission needed, but it only surfaces
-**static** shortcuts. Dynamic shortcuts (generated at runtime — "message
-Mom," "resume last document") and pinned shortcuts are invisible this
-way, no workaround short of becoming a launcher. Some static shortcuts
-also point at non-exported activities and will throw a
-`SecurityException` if launched from outside their own app; that's
-caught silently at fire time (see `GlyphTorchToyService.fireAction()`),
-not filtered out of the picker list.
+Two other shortcut mechanisms were tried and dropped, both confirmed on
+real hardware:
 
-**Launching anything from the service at all might get blocked.** Since
-Android 10, `startActivity()` from a background context (no visible
-UI — which describes this bound service) is disallowed by default
-unless a specific exemption applies. Whether Nothing OS's IPC delivery
-of these toy events counts as one of those exemptions isn't something
-that can be confirmed from the public SDK — it's closed-source on
-Nothing's side. It may just work (a real hardware button press is a
-legitimate user interaction), or it may silently fail with nothing but
-a logcat warning and no visible error. This needs testing on the actual
-device to know for sure; there's no notification-based fallback
-implemented yet if it turns out to be blocked.
+- `LauncherApps.getShortcuts()` (dynamic + pinned shortcuts) requires
+  the calling app to be the phone's default launcher
+  (`hasShortcutHostPermission()`), which this app deliberately isn't.
+  Never implemented for that reason.
+- Static shortcuts (parsed directly from each app's `shortcuts.xml`, no
+  permission needed) were implemented, then removed: most of them
+  pointed at non-exported activities and threw `SecurityException` when
+  launched from outside their own app. In practice only a small
+  fraction of an app's static shortcuts were actually launchable this
+  way, and there was no reliable way to tell which ones without trying.
+
+What's used instead: `ACTION_CREATE_SHORTCUT`, the older "pick a
+shortcut" mechanism that predates `ShortcutManager`. Any app can declare
+an activity that responds to it; the picker launches that activity via
+`startActivityForResult` and captures whatever it returns
+(`EXTRA_SHORTCUT_INTENT` + `EXTRA_SHORTCUT_NAME`). No special permission
+needed. Some apps show their own picker UI when launched this way (e.g.
+Automate's flow list); others with only one thing to offer just return
+a result immediately with no visible UI at all — both are valid,
+expected uses of this API, not a bug. The "+" only appears on an app's
+row if it declares at least one such activity.
+
+## SYSTEM_ALERT_WINDOW is required for actions to fire in the background
+
+Confirmed on hardware: with the config screen in the foreground,
+configured actions fire correctly. With it closed, they silently don't.
+This matches Android's background-activity-start restrictions (in
+effect since Android 10) — starting an activity from a context with no
+visible UI, like this bound service reacting to a Glyph Button press,
+is blocked by default. One of the documented exemptions is holding the
+`SYSTEM_ALERT_WINDOW` permission. This is a "special access" permission
+granted through a Settings toggle, not a runtime dialog — the config
+screen shows a prompt linking directly to that toggle whenever it isn't
+already granted.
+
+(The narrower Android-15-specific version of this exemption you may see
+mentioned online — requiring an actual visible overlay window, not just
+the permission — applies to starting *foreground services* from the
+background, a different restriction. For starting *activities*, which
+is what this app does, holding the permission is sufficient on its own.)
+
+## Package visibility
+
+Android 11+ hides other installed apps from `PackageManager` queries by
+default unless the querying app declares what it's looking for. Without
+this, the picker only sees a handful of apps the OS happens to leave
+visible regardless. Fixed with a `<queries>` block in the manifest
+declaring the two intents the picker actually queries for — the
+documented, Play-Store-friendly way to get this visibility without the
+much more broadly scoped `QUERY_ALL_PACKAGES` permission.
 
 ## What's in here
 
@@ -70,7 +99,6 @@ implemented yet if it turns out to be blocked.
   launch-this-shortcut) as a simple string for SharedPreferences.
 - `GlyphActionsConfig.java` — reads/writes the four action slots and the
   timer value.
-- `ShortcutUtils.java` — the static-shortcut XML parser described above.
 
 Brightness note (still applies): the true per-pixel ceiling for the raw
 `setMatrixFrame(int[])` path is 4095, not the 0-255 documented for
