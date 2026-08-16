@@ -19,6 +19,7 @@ import com.nothing.ketchum.GlyphMatrixManager;
 import com.nothing.ketchum.GlyphToy;
 
 import java.util.Arrays;
+import java.util.Set;
 
 public class GlyphTorchToyService extends Service {
 
@@ -151,6 +152,10 @@ public class GlyphTorchToyService extends Service {
         ActionTarget target = GlyphActionsConfig.get(this, prefKey);
         if (target == null) return;
         try {
+
+            if (Set.of(GlyphActionsConfig.KEY_LONGPRESS, GlyphActionsConfig.KEY_EXTRA_LONGPRESS).contains(prefKey))
+                mGM.turnOff();
+            
             Intent intent;
             if (ActionTarget.TYPE_APP.equals(target.type)) {
                 intent = getPackageManager().getLaunchIntentForPackage(target.packageName);
