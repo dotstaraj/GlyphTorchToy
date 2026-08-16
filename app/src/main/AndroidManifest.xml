@@ -3,17 +3,32 @@
 
     <!-- Required by the Glyph Matrix SDK to talk to the system Glyph service -->
     <uses-permission android:name="com.nothing.ketchum.permission.ENABLE"/>
+    <!-- For the extra-long-press haptic pattern -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/glyph_torch_icon"
         android:label="@string/app_name">
 
+        <!-- Minimal config screen: pick which app/shortcut each of the four
+             toy signals launches, and set the extra-long-press timer. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
         <!-- The actual Glyph Toy. Registered so Nothing OS's Glyph Toys manager
-             finds it and lets you add it to your active toy rotation. No
-             longpress metadata: this toy doesn't react to the Glyph Button at
-             all, it's simply on while selected and off once you cycle away
-             (the documented default when that meta-data is omitted). -->
+             finds it and lets you add it to your active toy rotation.
+             longpress metadata is back: the toy now listens for EVENT_CHANGE
+             (regular long press) and EVENT_ACTION_DOWN/UP (used to time the
+             extra-long-press heuristic), in addition to the unchanged
+             activation/deactivation torch behavior. -->
         <service
             android:name=".GlyphTorchToyService"
             android:exported="true">
@@ -35,6 +50,13 @@
             <meta-data
                 android:name="com.nothing.glyph.toy.summary"
                 android:resource="@string/toy_summary"/>
+
+            <!-- Enables EVENT_CHANGE (long press) and, per the GDK docs,
+                 the same flag also governs the ACTION_DOWN/UP touch events
+                 this toy now also relies on for extra-long-press timing. -->
+            <meta-data
+                android:name="com.nothing.glyph.toy.longpress"
+                android:value="1"/>
         </service>
 
     </application>
