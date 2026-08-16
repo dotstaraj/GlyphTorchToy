@@ -165,8 +165,8 @@ public class MainActivity extends Activity {
     private ImageView iconButton(int drawableRes, View.OnClickListener onClick) {
         ImageView icon = new ImageView(this);
         icon.setImageResource(drawableRes);
-        icon.setLayoutParams(new LinearLayout.LayoutParams(56, 56));
-        //icon.setPadding(12, 12, 12, 12);
+        icon.setLayoutParams(new LinearLayout.LayoutParams(64, 64));
+        icon.setPadding(10, 0, 10, 10);
         icon.setOnClickListener(onClick);
         return icon;
     }
