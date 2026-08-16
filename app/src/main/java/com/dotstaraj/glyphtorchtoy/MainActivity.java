@@ -166,7 +166,7 @@ public class MainActivity extends Activity {
         ImageView icon = new ImageView(this);
         icon.setImageResource(drawableRes);
         icon.setLayoutParams(new LinearLayout.LayoutParams(56, 56));
-        icon.setPadding(12, 12, 12, 12);
+        //icon.setPadding(12, 12, 12, 12);
         icon.setOnClickListener(onClick);
         return icon;
     }
@@ -290,7 +290,7 @@ public class MainActivity extends Activity {
         // 66% of the screen in both dimensions -- must be set after show(),
         // since the dialog theme's default layout params get finalized then.
         Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
-        dialog.getWindow().setLayout((int) (bounds.width() * 0.66), (int) (bounds.height() * 0.66));
+        dialog.getWindow().setLayout((int) (bounds.width() * 0.75), (int) (bounds.height() * 0.75));
     }
 
     private void addAppRow(LinearLayout list, PackageManager pm, String packageName,
