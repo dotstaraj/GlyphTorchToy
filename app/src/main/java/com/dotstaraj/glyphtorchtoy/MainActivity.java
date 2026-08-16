@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,9 +21,11 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +44,14 @@ import java.util.Set;
  * sub-list of those -- tapping one hands off to that app's own picker UI
  * (e.g. Automate's flow list, or nothing visible at all if the app has
  * only one option and returns it directly) and captures whatever it
- * returns. No OK/Cancel -- tapping any entry commits it immediately.
+ * returns. No OK/Cancel in the picker -- tapping any entry commits it
+ * immediately.
+ *
+ * Each row also gets an edit and a delete button once it has a target
+ * configured: delete clears it back to "Not set", edit opens the raw
+ * intent-uri string for hand editing (works for both app- and
+ * shortcut-type targets -- an app target's own launch intent is
+ * synthesized as the starting text).
  *
  * Also surfaces a one-time prompt for the SYSTEM_ALERT_WINDOW permission,
  * without which configured actions only fire while this app itself is in
@@ -53,6 +63,7 @@ public class MainActivity extends Activity {
     private static final int REQUEST_CREATE_SHORTCUT = 1001;
 
     private final Map<String, TextView> subtitleViews = new HashMap<>();
+    private final Map<String, View[]> actionButtonViews = new HashMap<>();
     private String pendingPrefKey;
     private String pendingAppLabel;
     private TextView permissionRow;
@@ -115,8 +126,13 @@ public class MainActivity extends Activity {
 
     private View sectionRow(String label, String prefKey) {
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, PAD / 2, 0, PAD / 2);
+
+        LinearLayout textArea = new LinearLayout(this);
+        textArea.setOrientation(LinearLayout.VERTICAL);
+        textArea.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView title = new TextView(this);
         title.setText(label);
@@ -127,12 +143,32 @@ public class MainActivity extends Activity {
         subtitle.setTextSize(14);
         subtitle.setTextColor(Color.LTGRAY);
         subtitleViews.put(prefKey, subtitle);
-        refreshSubtitle(prefKey);
 
-        row.addView(title);
-        row.addView(subtitle);
-        row.setOnClickListener(v -> showPicker(prefKey));
+        textArea.addView(title);
+        textArea.addView(subtitle);
+        textArea.setOnClickListener(v -> showPicker(prefKey));
+
+        ImageView editButton = iconButton(R.drawable.ic_edit, v -> showEditIntentDialog(prefKey));
+        ImageView deleteButton = iconButton(R.drawable.ic_delete, v -> clearTarget(prefKey));
+
+        row.addView(textArea);
+        row.addView(editButton);
+        row.addView(deleteButton);
+
+        actionButtonViews.put(prefKey, new View[]{editButton, deleteButton});
+        refreshSubtitle(prefKey);
+        refreshActionButtons(prefKey);
+
         return row;
+    }
+
+    private ImageView iconButton(int drawableRes, View.OnClickListener onClick) {
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(drawableRes);
+        icon.setLayoutParams(new LinearLayout.LayoutParams(56, 56));
+        icon.setPadding(12, 12, 12, 12);
+        icon.setOnClickListener(onClick);
+        return icon;
     }
 
     private void refreshSubtitle(String prefKey) {
@@ -143,9 +179,25 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void refreshActionButtons(String prefKey) {
+        View[] buttons = actionButtonViews.get(prefKey);
+        if (buttons == null) return;
+        boolean configured = GlyphActionsConfig.get(this, prefKey) != null;
+        for (View b : buttons) {
+            b.setVisibility(configured ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private void selectTarget(String prefKey, ActionTarget target) {
         GlyphActionsConfig.set(this, prefKey, target);
         refreshSubtitle(prefKey);
+        refreshActionButtons(prefKey);
+    }
+
+    private void clearTarget(String prefKey) {
+        GlyphActionsConfig.clear(this, prefKey);
+        refreshSubtitle(prefKey);
+        refreshActionButtons(prefKey);
     }
 
     private View timerRow() {
@@ -234,6 +286,11 @@ public class MainActivity extends Activity {
         }
 
         dialog.show();
+
+        // 66% of the screen in both dimensions -- must be set after show(),
+        // since the dialog theme's default layout params get finalized then.
+        Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+        dialog.getWindow().setLayout((int) (bounds.width() * 0.66), (int) (bounds.height() * 0.66));
     }
 
     private void addAppRow(LinearLayout list, PackageManager pm, String packageName,
@@ -322,5 +379,61 @@ public class MainActivity extends Activity {
         String label = (name != null && !name.isEmpty()) ? (appLabel + ": " + name) : appLabel;
 
         selectTarget(prefKey, ActionTarget.forShortcut(label, shortcutIntent));
+    }
+
+    // --- Manual intent-string editing ----------------------------------------
+
+    private void showEditIntentDialog(String prefKey) {
+        ActionTarget target = GlyphActionsConfig.get(this, prefKey);
+        if (target == null) return;
+
+        String currentUri;
+        if (ActionTarget.TYPE_SHORTCUT.equals(target.type)) {
+            currentUri = target.intentUri;
+        } else {
+            Intent launchIntent = getPackageManager().getLaunchIntentForPackage(target.packageName);
+            currentUri = launchIntent != null ? launchIntent.toUri(Intent.URI_INTENT_SCHEME) : "";
+        }
+
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(PAD, PAD, PAD, PAD);
+
+        EditText input = new EditText(this);
+        input.setText(currentUri);
+        input.setTextColor(Color.WHITE);
+        input.setMinLines(4);
+        container.addView(input);
+
+        TextView saveButton = new TextView(this);
+        saveButton.setText("Save");
+        saveButton.setTextColor(Color.WHITE);
+        saveButton.setTextSize(16);
+        saveButton.setPadding(0, PAD / 2, 0, 0);
+        saveButton.setOnClickListener(v -> {
+            try {
+                Intent parsed = Intent.parseUri(input.getText().toString(), Intent.URI_INTENT_SCHEME);
+                selectTarget(prefKey, ActionTarget.forShortcut(target.label, parsed));
+                dialog.dismiss();
+            } catch (Exception e) {
+                Toast.makeText(this, "Invalid intent string", Toast.LENGTH_SHORT).show();
+            }
+        });
+        container.addView(saveButton);
+
+        dialog.setContentView(container);
+
+        GradientDrawable border = new GradientDrawable();
+        border.setColor(Color.BLACK);
+        border.setStroke(2, Color.WHITE);
+        dialog.getWindow().setBackgroundDrawable(border);
+
+        dialog.show();
+
+        Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+        dialog.getWindow().setLayout((int) (bounds.width() * 0.85), ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 }

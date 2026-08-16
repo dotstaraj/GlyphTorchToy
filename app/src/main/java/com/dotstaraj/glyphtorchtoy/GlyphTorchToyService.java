@@ -27,11 +27,8 @@ public class GlyphTorchToyService extends Service {
     // README for the full explanation.
     private static final int MAX_RAW_BRIGHTNESS = 4095;
 
-    // Extra-long-press haptic: no initial delay, a 200ms "long" pulse, a
-    // 100ms gap, a 5ms "short" pulse, another 100ms gap, another 5ms
-    // "short" pulse -- distinguishable from whatever (if anything) Nothing
-    // OS itself does for the regular long press.
-    private static final long[] EXTRA_LONG_PRESS_HAPTIC = {0, 200, 100, 5, 100, 5};
+    // Extra-long-press haptic: a single 200ms burst.
+    private static final int EXTRA_LONG_PRESS_HAPTIC_MS = 200;
 
     private GlyphMatrixManager mGM;
     private GlyphMatrixManager.Callback mCallback;
@@ -144,7 +141,7 @@ public class GlyphTorchToyService extends Service {
         }
         pressResolved = true;
         changeReceived = false;
-        vibrateExtraLongPress();
+        extraLongPressHaptic();
         fireAction(GlyphActionsConfig.KEY_EXTRA_LONGPRESS);
     }
 
@@ -172,12 +169,12 @@ public class GlyphTorchToyService extends Service {
         }
     }
 
-    private void vibrateExtraLongPress() {
+    private void extraLongPressHaptic() {
         try {
             VibratorManager vm = (VibratorManager) getSystemService(VIBRATOR_MANAGER_SERVICE);
             if (vm == null) return;
             Vibrator vibrator = vm.getDefaultVibrator();
-            vibrator.vibrate(VibrationEffect.createWaveform(EXTRA_LONG_PRESS_HAPTIC, -1));
+            vibrator.vibrate(VibrationEffect.createOneShot(EXTRA_LONG_PRESS_HAPTIC_MS, VibrationEffect.DEFAULT_AMPLITUDE));
         } catch (Exception e) {
             e.printStackTrace();
         }

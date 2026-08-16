@@ -29,6 +29,10 @@ class GlyphActionsConfig {
         prefs(context).edit().putString(key, target.encode()).apply();
     }
 
+    static void clear(Context context, String key) {
+        prefs(context).edit().remove(key).apply();
+    }
+
     static int getExtraLongPressTimerMs(Context context) {
         return prefs(context).getInt(KEY_EXTRA_LONGPRESS_TIMER_MS, DEFAULT_EXTRA_LONGPRESS_TIMER_MS);
     }
