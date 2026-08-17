@@ -328,7 +328,7 @@ public class MainActivity extends Activity {
             subList.setPadding(48, 0, 0, 0);
             subList.setVisibility(View.GONE);
             for (ResolveInfo creator : shortcutCreators) {
-                String label = creator.loadLabel(pm).toString() + "\u2026";
+                String label = creator.loadLabel(pm).toString();
                 TextView rowView = new TextView(this);
                 rowView.setText(label);
                 rowView.setTextSize(15);
